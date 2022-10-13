@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>AlmostFairLottery</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    </head>
+    <body>
+        <h1>Blockchain. Week 4. Almost fair lottery</h1>
+        <h2>Vladimir Bazilevich</h2>
+
+        <p id='status'>Loading...</p>
+
+        <!-- TODO: enter -->
+        <form>
+            <label for='argA'>Deposit (0.0001ETH): </label>
+            <input type='number' id='deposit' name='deposit' value=1><br>
+        </form>
+
+        <button onclick='enter();'>Enter</button>
+        <!-- TODO: get players -->
+        <button onclick='getPlayers();'>Get players</button>
+        <!-- TODO: pick winner -->
+        <button onclick='pickWinner();'>Pick winner</button>
+
+        <script type='text/javascript'>
+            async function loadWeb3() {
+                if (window.ethereum) {
+                    window.web3 = new Web3(window.ethereum);
+                    window.ethereum.enable();
+                    console.log('Connected to MetaMask wallet');
+                } else {
+                    console.log('Can\'t connect to MetaMask wallet');
+                }
+            }
+
+            async function load() {
+                await loadWeb3();
+                window.contract = await loadContract();
+                updateStatus('Ready!');
+            }
+
+            function updateStatus(status) {
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = status;
+                console.log(status);
+            }
+
+            async function loadContract() {
+                return await new window.web3.eth.Contract(
+                    [
+                        {
+                            "constant": false,
+                            "inputs": [],
+                            "name": "enter",
+                            "outputs": [],
+                            "payable": true,
+                            "stateMutability": "payable",
+                            "type": "function"
+                        },
+                        {
+                            "constant": false,
+                            "inputs": [],
+                            "name": "pickWinner",
+                            "outputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "function"
+                        },
+                        {
+                            "inputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "constructor"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "getPlayers",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "address[]"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "manager",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "address"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "name": "players",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "address"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        }
+                    ],
+                    '0x4b9724f004B2b8cD7369Fe238C72D0737DF0CAc3');
+            }
+            async function getCurrentAccount() {
+                const accounts = await window.web3.eth.getAccounts();
+                return accounts[0];
+            }
+
+            async function enter() {
+                updateStatus('Entering lottery...');
+                const amount = document.getElementById('deposit').value;
+
+                const account = await getCurrentAccount();
+                try {
+                    await window.contract.methods.enter().send({from: account, gas: 100000, value: amount * 100000000000000 + 1}, function(err, res) {});
+                    updateStatus('Entered lottery');
+                } catch (error) {
+                    updateStatus(error); 
+                }
+            }
+
+            async function getPlayers() {
+                updateStatus('Getting players list...');
+                players = await window.contract.methods.getPlayers().call({from: await getCurrentAccount()});
+                updateStatus(players.join('<br>'));
+            }
+
+            async function pickWinner() {
+                updateStatus('Picking winner...');
+                try {
+                    await window.contract.methods.pickWinner().send({from: await getCurrentAccount(), gas: 100000});
+                    updateStatus('Winner selected');
+                } catch (error) {
+                    updateStatus(error);
+                }
+            }
+
+            window.addEventListener('load', async () => {
+                // Modern dapp browsers...
+                if (window.ethereum) {
+                    window.web3 = new Web3(ethereum);
+                    try {
+                        // Request account access if needed
+                        await ethereum.enable();
+                        // Acccounts now exposed
+                        web3.eth.sendTransaction({/* ... */});
+                    } catch (error) {
+                        // User denied account access...
+                    }
+                }
+                // Legacy dapp browsers...
+                else if (window.web3) {
+                    window.web3 = new Web3(web3.currentProvider);
+                    // Acccounts always exposed
+                    web3.eth.sendTransaction({/* ... */});
+                }
+                // Non-dapp browsers...
+                else {
+                    console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+                }
+            });
+
+            load();
+        </script>
+    </body>
+</html>
